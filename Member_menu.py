@@ -67,6 +67,54 @@ def add_to_cart(id,isbn,quantity):
     conn.commit()
     print("Book added to cart!")
 
+def search(userid):
+    # searches books by titles or author
+    try:    # error handling for database error
+        print("\n---Search Books---")
+        print("1. Search by Title")
+        print("2. Search by Author")
+        # displays search options
+        choice = input("enter your choice: ").strip()
+        #  user choice for searching by title or author
+
+        if choice == '1':
+            keyword = input('Enter part of the titles: ').strip()
+            query = "SELECT Author, Title, ISBN, Price, Subject FROM books WHERE Title LIKE %s"
+        elif choice == '2':
+            keyword = input('Enter part of the authors name: ').strip()
+            query = "SELECT Author, Title, ISBN, Price, Subject FROM books WHERE Author LIKE %s"
+        else:
+            print('Invalid choice.Return to menu')
+            return
+        cursor.execute(query, (f"%{keyword}%",))
+        # cursos.execute the search query with the provided keyword
+        books = cursor.fetchall()
+        if not books:   # display search results or no matches found
+            print('no books found')
+            return
+        for books in books:  # print chosen book and its details
+            print(f"Author: {book[0]}, Title: {book[1]}, ISBN: {
+                  book[2]}, Price: {book[3]}, Subject: {book[4]}")
+        # user choice to add a book to the cart from the search results
+        isbn = input(
+            "\nEnter ISBN to add to cart or press ENTER to go back: ").strip()
+        if isbn:
+            if len(isbn) != 10:   # validate isbn length
+                print('INVALID ISBN.Should be atlest ten characters')
+                return
+            try:
+                # ask for quantity before adding to cart
+                quantity = int(input('Enter quantity: '))
+                if quantity <= 0:
+                    print('Invalid quantity.It must be positive')
+                    return
+                add_to_cart(userid, isbn, quantity)
+            except ValueError:
+                print('Invalid input.')
+        else:
+            print('Returning to menu.')
+    except mysql.connector.Error as e:
+        print(F'Database error: {e}')
 
 #def main():
  #   userid = login()
