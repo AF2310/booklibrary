@@ -157,6 +157,51 @@ def search(userid):
     except mysql.connector.Error as e:
         print(F'Database error: {e}')
 
+def checkout(userid):   # function that that retrieves cart items displays their cost and allows user to complete purchase
+    try:
+        # fetches items from the users cart along with book details
+        cursor.execute("""
+            SELECT c.ISBN, b.Title, c.quantity, b.Price
+            FROM cart c
+            JOIN books b ON c.ISBN = b.ISBN
+            WHERE c.userid = %s
+        """, (userid,))
+        cartbasket=cursor.fetchall()
+        if not cartbasket:  # checks if the cart if empty 
+            print('empty cart')
+            return
+        totalprice=0    # initialize total price
+        for item in cartbasket: # iterates through the cartitems to display all the items and calculate the total price
+            isbn,title,quantity,price=item  # unpacks tuple item into four variables 
+            total=quantity*price
+            totalprice+=total
+            print(f"ISBN: {isbn}, Title: {title}, Quantity: {quantity}, Price: {price}, Total: {total}")
+        print(f'total price: {totalprice}')
+        accept=input('accept purchase?(y/n):').strip().lower()  # user choice to confirm purchase
+        if accept=='y':
+            # inserts new order in the orders table 
+            cursor.execute("""
+                INSERT INTO orders (Userid, Createdate, shipAddress, shipCity, shipZip)
+                VALUES (%s, CURDATE(), 
+                (SELECT Address FROM members WHERE Userid = %s),
+                (SELECT City FROM members WHERE Userid = %s),
+                (SELECT Zip FROM members WHERE Userid = %s))
+            """, (userid, userid, userid, userid))
+            orderid=cursor.lastrowid  # gets the id of the new order inserted
+            for item in cartbasket:  # iterates through the cart to calculate the amount
+                isbn,title,quantity,price=item
+                amount=quantity*price
+                cursor.execute("""
+                    INSERT INTO odetails (OrderID, ISBN, quantity, amount) VALUES (%s, %s, %s, %s)
+                """, (orderid, isbn, quantity, amount))     # adds items from the cart in the order details table
+            cursor.execute("DELETE FROM cart WHERE userid = %s",(userid))   # clears the cart after chckout
+            conn.commit()   # commits changes to the database 
+            print('check out completed')
+        else:
+            print('checkout cancelled')
+    except mysql.connector.Error as e:
+        print(f"database connection error: {e}")
+
 
 def mainmenu():
     # disaplays the main menu and allows for user interaction
