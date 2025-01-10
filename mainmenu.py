@@ -197,6 +197,20 @@ def checkout(userid):   # function that that retrieves cart items displays their
             cursor.execute("DELETE FROM cart WHERE userid = %s",(userid))   # clears the cart after chckout
             conn.commit()   # commits changes to the database 
             print('check out completed')
+            print("\n--- Invoice ---")
+            print(f"Order ID: {orderid}")
+            print(f"User ID: {userid}")
+            print(f"Shipping Address: {address}, {city}, {zip_code}")
+            print(f"Order Date: {cursor.execute('SELECT CURDATE()').fetchone()[0]}")
+            print(f"Shipment Date: {cursor.execute('SELECT DATE_ADD(CURDATE(), INTERVAL 7 DAY)').fetchone()[0]}")
+            print("\nItems:")
+            for item in cartbasket:
+                isbn, title, quantity, price = item
+                total = quantity * price
+                print(f"ISBN: {isbn}, Title: {title}, Quantity: {quantity}, Price: {price}, Total: {total}")
+
+            print(f"\nTotal Price: {totalprice}")
+            print("\nCheckout completed. Thank you for your purchase!")
         else:
             print('checkout cancelled')
     except mysql.connector.Error as e:
