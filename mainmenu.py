@@ -1,4 +1,4 @@
-from Registration import *
+from member_reg_and_log import *
 import mysql.connector
 
 conn = mysql.connector.connect(
