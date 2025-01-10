@@ -92,7 +92,7 @@ def search(userid):
         if not books:   # display search results or no matches found
             print('no books found')
             return
-        for books in books:  # print chosen book and its details
+        for book in books:  # print chosen book and its details
             print(f"Author: {book[0]}, Title: {book[1]}, ISBN: {
                   book[2]}, Price: {book[3]}, Subject: {book[4]}")
         # user choice to add a book to the cart from the search results
@@ -109,10 +109,19 @@ def search(userid):
                     print('Invalid quantity.It must be positive')
                     return
                 add_to_cart(userid, isbn, quantity)
+                choose = input("enter your choice to go back to menu or add books 1 or 2: ").strip()
+                if choose=='1':
+                    return
+                elif choose=='2':
+                    return search(userid)
+                else:
+                    print('invalid choice try again')
+                    return search(userid)
             except ValueError:
                 print('Invalid input.')
         else:
             print('Returning to menu.')
+            return
     except mysql.connector.Error as e:
         print(F'Database error: {e}')
 
