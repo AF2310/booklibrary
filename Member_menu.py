@@ -84,24 +84,24 @@ def search(userid):
             keyword = input('Enter part of the authors name: ').strip()
             query = "SELECT Author, Title, ISBN, Price, Subject FROM books WHERE Author LIKE %s"
         else:
-            print('Invalid choice.Return to menu')
-            return
+            print('Invalid choice.try again')
+            return search(userid)
         cursor.execute(query, (f"%{keyword}%",))
         # cursos.execute the search query with the provided keyword
         books = cursor.fetchall()
         if not books:   # display search results or no matches found
-            print('no books found')
-            return
+            print('no books found.try again')
+            return search(userid)
         for book in books:  # print chosen book and its details
             print(f"Author: {book[0]}, Title: {book[1]}, ISBN: {
                   book[2]}, Price: {book[3]}, Subject: {book[4]}")
         # user choice to add a book to the cart from the search results
         isbn = input(
-            "\nEnter ISBN to add to cart or press ENTER to go back: ").strip()
+            "\nEnter ISBN to add to cart or press ENTER to go back to menu: ").strip()
         if isbn:
             if len(isbn) != 10:   # validate isbn length
                 print('INVALID ISBN.Should be atlest ten characters')
-                return
+                return search(userid)
             try:
                 # ask for quantity before adding to cart
                 quantity = int(input('Enter quantity: '))
