@@ -1,33 +1,44 @@
 import mysql.connector
-
 conn = mysql.connector.connect(host="localhost", user="root", password="010580sis", database="book_store")
 cursor=conn.cursor()
 
 def browse_by_subject(userid):
+    # Fetch distinct subjects from the 'books' table
     cursor.execute("SELECT DISTINCT Subject FROM books ORDER BY Subject")
     subjects = cursor.fetchall()
-    for i,subject in enumerate(subjects,1):
+
+    # Display each subject with a corresponding number
+    for i, subject in enumerate(subjects, 1):
         print(f'{i}.{subject[0]}')
-    choice = int(input('Enter a choice:'))-1
+    to_choice = input('Enter a choice:')
+    # If the user presses Enter without input, return to the previous menu
+    if not to_choice:
+        return
+    choice=int(to_choice)-1
     choice_subject=subjects[choice][0]
+
+    # Fetch the count of books for the selected subject
     cursor.execute("""
         SELECT COUNT(*) FROM books WHERE Subject = %s
     """,(choice_subject,))
     book_count = cursor.fetchone()[0]
     print(f'{book_count} books available for this subject')
 
+    # Retrieve all books under the chosen subject
     cursor.execute("""
     SELECT Author,Title,ISBN,Price,Subject FROM books WHERE Subject=%s  
     """,(choice_subject,))
     all_books=cursor.fetchall()
-    books_per_page=2
+    books_per_page=2 # Number of books displayed per page
     current_page=0
     total_books=len(all_books)
     while True:
+        # Calculate the start and end indices for the current page
         start_index = current_page * books_per_page
         end_index = start_index + books_per_page
         page_books = all_books[start_index:end_index]
 
+        # Display books for the current page
         for i,book in enumerate(page_books,start=start_index+1):
             print(f'{i}:')
             print(f'Author:\t{book[0]}')
@@ -35,6 +46,8 @@ def browse_by_subject(userid):
             print(f'ISBN:\t{book[2]}')
             print(f'Price:\t{book[3]}')
             print(f'Subjects:\t{book[4]}')
+
+        # Display navigation instructions
         if end_index < total_books:
             print("\n Enter ISBN to add to cart or enter 'n' to browse enter Enter to go back")
         else:
@@ -42,88 +55,36 @@ def browse_by_subject(userid):
         user_input = input("Enter your choice: ")
         if user_input == 'n' and end_index < total_books:
             current_page += 1
+        # Return to the main menu if Enter is pressed
         elif not user_input:
             print("Returning to main menu...")
-            browse_by_subject(userid)
-        if int(len(user_input))==10:
+            return
+        # If input is an ISBN (assuming 10 digits or fewer), proceed to add to cart
+        elif int(len(user_input)) <= 10:
             user_quantity=int(input('Enter a quantity:'))
             add_to_cart(userid,user_input,user_quantity)
         else:
             print("Invalid input. Try again.")
 
-def add_to_cart(id,isbn,quantity):
+def add_to_cart(userid,isbn,quantity):
+    # Check if the book is already in the cart
     cursor.execute("""
     SELECT * FROM cart WHERE userid= %s AND ISBN = %s
-    """,(id,isbn))
+    """,(userid,isbn))
     existing_item = cursor.fetchone()
     if existing_item:
+        # If the book exists in the cart, update the quantity
         cursor.execute("""
         UPDATE cart SET QUANTITY=QUANTITY+%s WHERE userid=%s AND ISBN=%s 
-        """,(quantity,id,isbn))
+        """,(quantity,userid,isbn))
     else:
+        # If the book is not in the cart, insert it as a new entry
         cursor.execute("""
         INSERT INTO cart (userid,ISBN,quantity) VALUES(%s,%s,%s)
-        """,(id,isbn,quantity))
-    conn.commit()
+        """,(userid,isbn,quantity))
+    conn.commit()        # Commit changes to the database
     print("Book added to cart!")
 
-def search(userid):
-    # searches books by titles or author
-    try:    # error handling for database error
-        print("\n---Search Books---")
-        print("1. Search by Title")
-        print("2. Search by Author")
-        # displays search options
-        choice = input("enter your choice: ").strip()
-        #  user choice for searching by title or author
-
-        if choice == '1':
-            keyword = input('Enter part of the titles: ').strip()
-            query = "SELECT Author, Title, ISBN, Price, Subject FROM books WHERE Title LIKE %s"
-        elif choice == '2':
-            keyword = input('Enter part of the authors name: ').strip()
-            query = "SELECT Author, Title, ISBN, Price, Subject FROM books WHERE Author LIKE %s"
-        else:
-            print('Invalid choice.try again')
-            return search(userid)
-        cursor.execute(query, (f"%{keyword}%",))
-        # cursos.execute the search query with the provided keyword
-        books = cursor.fetchall()
-        if not books:   # display search results or no matches found
-            print('no books found.try again')
-            return search(userid)
-        for book in books:  # print chosen book and its details
-            print(f"Author: {book[0]}, Title: {book[1]}, ISBN: {
-                  book[2]}, Price: {book[3]}, Subject: {book[4]}")
-        # user choice to add a book to the cart from the search results
-        isbn = input(
-            "\nEnter ISBN to add to cart or press ENTER to go back to menu: ").strip()
-        if isbn:
-            if len(isbn) != 10:   # validate isbn length
-                print('INVALID ISBN.Should be atlest ten characters')
-                return search(userid)
-            try:
-                # ask for quantity before adding to cart
-                quantity = int(input('Enter quantity: '))
-                if quantity <= 0:
-                    print('Invalid quantity.It must be positive')
-                    return
-                add_to_cart(userid, isbn, quantity)
-                choose = input("enter your choice to go back to menu or add books 1 or 2: ").strip()
-                if choose=='1':
-                    return
-                elif choose=='2':
-                    return search(userid)
-                else:
-                    print('invalid choice try again')
-                    return search(userid)
-            except ValueError:
-                print('Invalid input.')
-        else:
-            print('Returning to menu.')
-            return
-    except mysql.connector.Error as e:
-        print(F'Database error: {e}')
 
 #def main():
  #   userid = login()
